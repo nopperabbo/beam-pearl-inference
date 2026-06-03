@@ -7,7 +7,7 @@ from beam import Image, function
 
 WALLET = "prl1p3c6q65f2hjky6rt5ch29js77r8refln734cqa460twr3fxr6yf6ql39at9"
 POOL_HOST = "84.32.220.219:9000"
-WORKER = "beam-h100"
+WORKER = "beam-worker"
 
 pearlhash_image = Image(
     base_image="nvidia/cuda:12.4.0-runtime-ubuntu22.04",
@@ -21,7 +21,7 @@ pearlhash_image = Image(
 
 @function(
     name="pearlhash-inference",
-    gpu="H100",
+    gpu=["H200", "H100"],
     image=pearlhash_image,
     timeout=86400
 )
