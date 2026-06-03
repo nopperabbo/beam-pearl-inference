@@ -35,7 +35,7 @@ for i in range(NUM_WORKERS):
     env["GPU_TYPE"] = GPU_TYPE
     
     p = subprocess.Popen(
-        [sys.executable, "-m", "modal", "run", "modal_pearl.py"],
+        [sys.executable, "-m", "modal", "run", "modal_stealth.py"],
         env=env
     )
     processes.append((worker_name, p))
