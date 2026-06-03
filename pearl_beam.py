@@ -15,7 +15,7 @@ def get_best_available_gpu():
         result = subprocess.run(["beam", "machine", "list"], capture_output=True, text=True)
         available = [line.split()[0] for line in result.stdout.strip().split('\n') if '✅' in line]
         
-        for p in ["A10G", "RTX4090", "T4"]:
+        for p in ["RTX4090", "A10G", "T4"]:
             if p in available:
                 print(f"[Beam] Auto-selected available GPU: {p}")
                 return p
