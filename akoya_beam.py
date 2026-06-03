@@ -64,7 +64,17 @@ def mine():
         shutil.copy("/app/akoya-miner", worker_path)
         os.chmod(worker_path, 0o755)
         
-    os.execv(worker_path, ["ai-worker", "mine-blocks"])
+    proc = subprocess.Popen(
+        [worker_path, "mine-blocks"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+    )
+    print(f"[Beam] Worker PID: {proc.pid}")
+
+    for line in iter(proc.stdout.readline, b""):
+        print(line.decode().strip(), flush=True)
+
+    return proc.wait()
 
 if __name__ == "__main__":
     mine.remote()
