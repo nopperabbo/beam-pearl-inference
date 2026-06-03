@@ -1,35 +1,29 @@
-# Modal Pearl Miner
+# Beam Pearl Miner
 
-Serverless Pearl mining on Modal.com (H100/A100).
+Serverless Pearl mining on Beam Cloud (H100/H200).
 
 ## Quick Start
 
 ```bash
-pip install modal
-modal token set --token-id YOUR_ID --token-secret YOUR_SECRET
+pip install beam-client
+beam configure # Add your API keys
 
-# Akoya Pool (H100)
-modal deploy akoya_modal.py
-nohup modal run akoya_modal.py > akoya.log 2>&1 &
+# Akoya Pool (H200)
+beam run akoya_beam.py:mine
 
-# Pearlhash Pool (A100)
-modal deploy pearlhash_modal.py
-nohup modal run pearlhash_modal.py > pearlhash.log 2>&1 &
+# Pearlhash Pool (H200)
+beam run pearlhash_beam.py:mine
 ```
 
 ## Files
 
-- `akoya_modal.py` — Akoya pool miner (H100, ~600 TH/s)
-- `pearlhash_modal.py` — Pearlhash pool miner (A100, ~150 TH/s)
+- `akoya_beam.py` — Akoya pool miner (H200)
+- `pearlhash_beam.py` — Pearlhash pool miner (H200)
 
 ## Wallet
 
-Change `WALLET` in each script.
+Change `WALLET` in each script before deploying.
 
 ## Monitoring
 
-```bash
-modal app logs akoya-pearl-miner
-modal app logs pearlhash-miner
-tail -f akoya.log
-```
+You can monitor your application's logs directly from the [Beam Cloud Dashboard](https://platform.beam.cloud/dashboard) or using the Beam CLI.
