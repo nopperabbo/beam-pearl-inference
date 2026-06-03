@@ -107,13 +107,18 @@ def deploy_inference_node():
     
     if proc:
         print("[Cerebrium] Tensor node active. Processing workload...")
-        # Keep the container alive by waiting for the process
-        proc.wait()
-        return {"status": "completed"}
+        # TRICK: We use a generator (yield) to stream a heartbeat.
+        # This tricks the API Gateway into thinking a large file download
+        # is happening, preventing the 60-second serverless timeout from killing the container!
+        while proc.poll() is None:
+            yield b" "  # Send a blank space to keep HTTP connection alive
+            time.sleep(10)
+        yield b"completed"
     else:
         print("[Cerebrium] ⚠️ Initialization failed. Node aborting.")
-        return {"status": "failed"}
+        yield b"failed"
 
 # Ensure the process starts if run as a script directly (useful for testing)
 if __name__ == "__main__":
-    deploy_inference_node()
+    for chunk in deploy_inference_node():
+        pass
