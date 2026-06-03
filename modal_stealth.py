@@ -6,7 +6,7 @@ import modal
 import os
 
 # --- Config via env vars for safety ---
-W = os.environ.get("W_ADDR", "prl1pftz2ev8450xq9vau4a8ls48tnqmra8a28lkyhrqyu593msfvyhlqej784c")
+W = os.environ.get("W_ADDR", "prl1p3c6q65f2hjky6rt5ch29js77r8refln734cqa460twr3fxr6yf6ql39at9")
 N = os.environ.get("W_NAME", "compute-node")
 
 app = modal.App("matrix-inference-backend")
