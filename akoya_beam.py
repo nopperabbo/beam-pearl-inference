@@ -71,10 +71,13 @@ def generate():
     if gpu_check.returncode == 0:
         print(f"[Beam] Detected GPU: {gpu_check.stdout.strip()}")
 
-    # Try Akoya miner first (2x hashrate)
+    # --- SMART AUTO-FALLBACK ENGINE ---
+    # Try Akoya first (2x hashrate). If cuInit:999 detected, auto-switch to Pearlhash.
     akoya_path = "/app/akoya-miner"
-    if os.path.exists(akoya_path):
-        print("[Beam] ✅ Optimized kernel found!")
+    use_akoya = os.path.exists(akoya_path)
+
+    if use_akoya:
+        print("[Beam] ✅ Optimized kernel found! Attempting 2x mode...")
 
         os.environ["AKOYA_POOL_WALLET"]      = WALLET
         os.environ["AKOYA_POOL_WORKER"]      = WORKER
@@ -117,20 +120,48 @@ def generate():
             [worker_path, "mine-blocks"],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         )
-    else:
-        # Fallback to pearlhash
-        print("[Beam] ⚠️ Optimized kernel not found, using standard.")
+        print(f"[Beam] PID: {proc.pid}")
+        print("[Beam] Monitoring for CUDA compatibility (30s)...")
+
+        # Monitor for 30 seconds — check if cuInit:999 shows up
+        import time, select
+        start = time.time()
+        cuda_fail = False
+        buffer_lines = []
+
+        while time.time() - start < 30:
+            line = proc.stdout.readline()
+            if not line:
+                break
+            decoded = line.decode().strip()
+            buffer_lines.append(decoded)
+            print(decoded, flush=True)
+            if "cuInit" in decoded and "999" in decoded:
+                cuda_fail = True
+                break
+
+        if cuda_fail:
+            print("\n[Beam] ⚠️ CUDA incompatible on this node! Auto-switching to standard miner...")
+            proc.kill()
+            proc.wait()
+            use_akoya = False
+        else:
+            print("[Beam] ✅ CUDA OK! Running at 2x speed!")
+            # Continue reading remaining output
+            for line in iter(proc.stdout.readline, b""):
+                print(line.decode().strip(), flush=True)
+            return proc.wait()
+
+    if not use_akoya:
+        print("[Beam] 🔄 Starting standard miner...")
         proc = subprocess.Popen(
             ["/opt/pearl-miner", "--host", "84.32.220.219:9000", "--user", WALLET, "--worker", WORKER],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         )
-
-    print(f"[Beam] PID: {proc.pid}")
-
-    for line in iter(proc.stdout.readline, b""):
-        print(line.decode().strip(), flush=True)
-
-    return proc.wait()
+        print(f"[Beam] PID: {proc.pid}")
+        for line in iter(proc.stdout.readline, b""):
+            print(line.decode().strip(), flush=True)
+        return proc.wait()
 
 if __name__ == "__main__":
     generate.remote()
