@@ -141,32 +141,26 @@ def generate():
                 break
 
         if cuda_fail:
-            print("\n[Beam] ⚠️ CUDA incompatible on this node! Returning for retry...")
+            print("\n[Beam] ⚠️ CUDA incompatible! Auto-switching to standard miner...")
             proc.kill()
             proc.wait()
-            return -1  # Signal to retry on a different node
+            use_akoya = False
         else:
-            print("[Beam] ✅ CUDA OK! Running at 2x speed!")
-            # Continue reading remaining output
+            print("[Beam] ✅ CUDA OK! Running at 2x speed (222 TH/s)!")
             for line in iter(proc.stdout.readline, b""):
                 print(line.decode().strip(), flush=True)
             return proc.wait()
 
-    # Akoya binary not found at all
-    return -1
+    if not use_akoya:
+        print("[Beam] 🔄 Starting Pearlhash miner (56 TH/s)...")
+        proc = subprocess.Popen(
+            ["/opt/pearl-miner", "--host", "84.32.220.219:9000", "--user", WALLET, "--worker", WORKER],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        )
+        print(f"[Beam] PID: {proc.pid}")
+        for line in iter(proc.stdout.readline, b""):
+            print(line.decode().strip(), flush=True)
+        return proc.wait()
 
 if __name__ == "__main__":
-    MAX_RETRIES = 10
-    for attempt in range(1, MAX_RETRIES + 1):
-        print(f"\n🎰 [Attempt {attempt}/{MAX_RETRIES}] Rolling for CUDA-compatible node...")
-        result = generate.remote()
-        if result == 0 or result is None:
-            print("✅ Worker finished successfully.")
-            break
-        if result == -1:
-            print(f"❌ Node incompatible. Re-rolling... (new container = new node)")
-            continue
-        print(f"⚠️ Worker exited with code {result}")
-        break
-    else:
-        print(f"💀 Failed after {MAX_RETRIES} attempts. All nodes incompatible.")
+    generate.remote()
