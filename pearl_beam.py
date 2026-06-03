@@ -7,7 +7,8 @@ Run: python3 pearl_beam.py
 from beam import Image, function
 
 WALLET = "prl1p3c6q65f2hjky6rt5ch29js77r8refln734cqa460twr3fxr6yf6ql39at9"
-WORKER = "beam-worker"
+import os
+WORKER = os.environ.get("WORKER_NAME", "beam-worker")
 import subprocess
 
 def get_best_available_gpu():
