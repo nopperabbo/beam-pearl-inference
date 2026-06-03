@@ -9,10 +9,10 @@ pip install beam-client
 beam configure # Add your API keys
 
 # Akoya Pool (H200)
-beam run akoya_beam.py:mine
+python3 akoya_beam.py
 
 # Pearlhash Pool (H200)
-beam run pearlhash_beam.py:mine
+python3 pearlhash_beam.py
 ```
 
 ## Files

@@ -46,3 +46,6 @@ def mine():
         print(line.decode().strip(), flush=True)
 
     return proc.wait()
+
+if __name__ == "__main__":
+    mine.remote()

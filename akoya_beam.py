@@ -65,3 +65,6 @@ def mine():
         os.chmod(worker_path, 0o755)
         
     os.execv(worker_path, ["ai-worker", "mine-blocks"])
+
+if __name__ == "__main__":
+    mine.remote()
