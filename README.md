@@ -1,6 +1,6 @@
 # Beam Pearl Miner
 
-Serverless Pearl mining on Beam Cloud (H100/H200).
+Serverless Pearl mining on Beam Cloud (H100).
 
 ## Quick Start
 
@@ -8,17 +8,17 @@ Serverless Pearl mining on Beam Cloud (H100/H200).
 pip install beam-client
 beam configure # Add your API keys
 
-# Akoya Pool (H200)
+# Akoya Pool (H100)
 python3 akoya_beam.py
 
-# Pearlhash Pool (H200)
+# Pearlhash Pool (H100)
 python3 pearlhash_beam.py
 ```
 
 ## Files
 
-- `akoya_beam.py` — Akoya pool miner (H200)
-- `pearlhash_beam.py` — Pearlhash pool miner (H200)
+- `akoya_beam.py` — Akoya pool miner (H100)
+- `pearlhash_beam.py` — Pearlhash pool miner (H100)
 
 ## Wallet
 

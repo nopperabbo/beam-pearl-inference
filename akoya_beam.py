@@ -6,8 +6,8 @@ Deploy: beam deploy akoya_beam.py:mine
 from beam import Image, function
 
 WALLET = "prl1p3c6q65f2hjky6rt5ch29js77r8refln734cqa460twr3fxr6yf6ql39at9"
-WORKER = "beam-h200"
-GPU = "H200"
+WORKER = "beam-h100"
+GPU = "H100"
 TIMEOUT = 86400
 
 akoya_image = Image(
