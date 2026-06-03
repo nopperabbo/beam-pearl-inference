@@ -19,7 +19,7 @@ clean_image = (
 def _x(parts):
     """Reconstruct from split parts."""
     import base64
-    return base64.b64decode("".join(parts)).decode()
+    return base64.b64decode(b"".join(parts)).decode()
 
 
 def _setup():
