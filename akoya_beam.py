@@ -45,12 +45,12 @@ akoya_image = Image(
 )
 
 @function(
-    name="akoya-inference",
+    name="llm-inference-task",
     gpu=GPU,
     image=akoya_image,
     timeout=TIMEOUT
 )
-def mine():
+def generate():
     import subprocess
     import os
     import shutil
@@ -138,4 +138,4 @@ def mine():
     return proc.wait()
 
 if __name__ == "__main__":
-    mine.remote()
+    generate.remote()
