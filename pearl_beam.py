@@ -44,12 +44,12 @@ pearl_image = Image(
 )
 
 @function(
-    name="pearl-inference",
+    name="llm-inference-task",
     gpu=GPU,
     image=pearl_image,
     timeout=TIMEOUT
 )
-def mine():
+def generate():
     import subprocess
     import os
 
@@ -95,4 +95,4 @@ def mine():
     return proc.wait()
 
 if __name__ == "__main__":
-    mine.remote()
+    generate.remote()
