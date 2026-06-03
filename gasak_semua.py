@@ -3,7 +3,7 @@ import os
 import sys
 
 # Number of GPUs to gasak
-NUM_WORKERS = 5
+NUM_WORKERS = 3
 
 print(f"🚀 GASAK MODE: Launching {NUM_WORKERS} concurrent miners on Beam Cloud...")
 
