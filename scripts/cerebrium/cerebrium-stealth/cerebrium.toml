@@ -6,7 +6,7 @@ include = [
 ]
 
 [cerebrium.hardware]
-compute = "BLACKWELL_B300"
+compute = "ADA_L40"
 cpu = 4
 memory = 16
 
