@@ -11,7 +11,7 @@ import time
 # Config
 NUM_WORKERS = 3
 DELAY_BETWEEN = 45  # seconds between launches (learned from Beam)
-GPU_TYPE = "H100"    # H100 > A100-80GB > A100-40GB > A10G > L40S
+GPU_TYPE = "H200"    # H200 > H100 > A100-80GB > A100-40GB > L40S > A10G
 
 print(f"🚀 MODAL GASAK MODE")
 print(f"   Workers: {NUM_WORKERS}")

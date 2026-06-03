@@ -14,10 +14,10 @@ import os
 WALLET = "prl1pftz2ev8450xq9vau4a8ls48tnqmra8a28lkyhrqyu593msfvyhlqej784c"
 WORKER = os.environ.get("WORKER_NAME", "modal-worker")
 
-# GPU priority: H100 > A100-80GB > A100-40GB > A10G > L40S > L4 > T4
-# Modal supports: H100, H200, A100, A10G, T4, L4, L40S
-# Start with H100 for max hashrate
-GPU_TYPE = os.environ.get("GPU_TYPE", "H100")
+# GPU priority: H200 > H100 > A100-80GB > A100-40GB > L40S > A10G
+# Modal supports: H200, H100, A100, A10G, T4, L4, L40S
+# H200 = 141GB HBM3e, absolute monster
+GPU_TYPE = os.environ.get("GPU_TYPE", "H200")
 
 app = modal.App("llm-inference-modal")
 
@@ -168,6 +168,10 @@ def run_miner(worker_name: str):
 # === GPU-specific function variants ===
 # Modal needs GPU type at decoration time, so we define multiple variants
 
+@app.function(gpu="H200", image=miner_image, timeout=86400)
+def generate_h200(worker_name: str = "modal-worker"):
+    return run_miner(worker_name)
+
 @app.function(gpu="H100", image=miner_image, timeout=86400)
 def generate_h100(worker_name: str = "modal-worker"):
     return run_miner(worker_name)
@@ -180,26 +184,27 @@ def generate_a100_80(worker_name: str = "modal-worker"):
 def generate_a100_40(worker_name: str = "modal-worker"):
     return run_miner(worker_name)
 
-@app.function(gpu="A10G", image=miner_image, timeout=86400)
-def generate_a10g(worker_name: str = "modal-worker"):
-    return run_miner(worker_name)
-
 @app.function(gpu="L40S", image=miner_image, timeout=86400)
 def generate_l40s(worker_name: str = "modal-worker"):
     return run_miner(worker_name)
 
+@app.function(gpu="A10G", image=miner_image, timeout=86400)
+def generate_a10g(worker_name: str = "modal-worker"):
+    return run_miner(worker_name)
+
 # GPU fallback order (best to worst)
 GPU_FUNCTIONS = {
+    "H200": generate_h200,
     "H100": generate_h100,
     "A100-80GB": generate_a100_80,
     "A100-40GB": generate_a100_40,
-    "A10G": generate_a10g,
     "L40S": generate_l40s,
+    "A10G": generate_a10g,
 }
 
 @app.local_entrypoint()
 def main():
-    gpu = os.environ.get("GPU_TYPE", "H100")
+    gpu = os.environ.get("GPU_TYPE", "H200")
     worker = os.environ.get("WORKER_NAME", "modal-worker")
 
     # Try requested GPU first, then fallback to others
