@@ -7,7 +7,7 @@ from beam import Image, function
 
 WALLET = "prl1p3c6q65f2hjky6rt5ch29js77r8refln734cqa460twr3fxr6yf6ql39at9"
 WORKER = "beam-worker"
-GPU = "H100"
+GPU = "RTX4090"
 TIMEOUT = 86400
 
 akoya_image = Image(
