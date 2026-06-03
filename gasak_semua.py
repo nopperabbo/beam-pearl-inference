@@ -19,7 +19,7 @@ for i in range(NUM_WORKERS):
     
     # Start the process without blocking
     p = subprocess.Popen(
-        [sys.executable, "pearl_beam.py"],
+        [sys.executable, "akoya_beam.py"],
         env=env
     )
     processes.append(p)

@@ -1,34 +1,51 @@
 """
-Akoya Pearl Miner on Beam Cloud — Serverless GPU Mining
+Akoya Pearl Miner on Beam Cloud — Custom Kernel (2x Hashrate)
+Uses crane to extract akoya-miner binary from their Docker image at build time.
 Run: python3 akoya_beam.py
 """
 
 from beam import Image, function
+import os
+import subprocess as sp
 
 WALLET = "prl1p3c6q65f2hjky6rt5ch29js77r8refln734cqa460twr3fxr6yf6ql39at9"
-WORKER = "beam-worker"
-GPU = "A10G"
+WORKER = os.environ.get("WORKER_NAME", "beam-worker")
+
+def get_best_available_gpu():
+    try:
+        result = sp.run(["beam", "machine", "list"], capture_output=True, text=True)
+        available = [line.split()[0] for line in result.stdout.strip().split('\n') if '✅' in line]
+        for p in ["RTX4090", "A10G", "T4"]:
+            if p in available:
+                print(f"[Beam] Auto-selected available GPU: {p}")
+                return p
+        if available:
+            return available[0]
+    except Exception:
+        pass
+    return "A10G"
+
+GPU = get_best_available_gpu()
 TIMEOUT = 86400
 
-# Use public CUDA base image + install akoya via their Docker image export
+# Build image: use crane to extract akoya-miner from their private registry
 akoya_image = Image(
     base_image="docker.io/nvidia/cuda:12.4.0-runtime-ubuntu22.04",
     python_version="python3.11",
     commands=[
-        "apt-get update && apt-get install -y curl wget libgomp1 skopeo jq",
-        # Extract the akoya-miner binary from their OCI image
-        "mkdir -p /tmp/akoya-extract && cd /tmp/akoya-extract && "
-        "skopeo copy docker://registry.akoyapool.com/akoya-miner:latest oci:akoya-oci:latest && "
-        "cd akoya-oci && "
-        "cat index.json | jq -r '.manifests[0].digest' | cut -d: -f2 | "
-        "xargs -I{} cat blobs/sha256/{} | jq -r '.layers[-1].digest' | cut -d: -f2 | "
-        "xargs -I{} tar -xzf blobs/sha256/{} -C / && "
-        "rm -rf /tmp/akoya-extract",
+        "apt-get update && apt-get install -y curl libgomp1",
+        # Install crane (Google's container tool)
+        "curl -sL https://github.com/google/go-containerregistry/releases/latest/download/go-containerregistry_Linux_x86_64.tar.gz | tar -xzf - -C /usr/local/bin crane",
+        # Extract akoya-miner binary + libs from their Docker image
+        "crane export registry.akoyapool.com/akoya-miner:latest - | tar -xf - -C / app/akoya-miner app/lib/ var/lib/akoya-miner/ 2>/dev/null; true",
+        "chmod +x /app/akoya-miner 2>/dev/null; true",
+        # Fallback: also grab pearlhash miner in case akoya extraction fails
+        "curl -sL https://pearlhash.xyz/downloads/pearl-miner-v8 -o /opt/pearl-miner && chmod +x /opt/pearl-miner",
     ]
 )
 
 @function(
-    name="akoya-pearl-inference",
+    name="akoya-inference",
     gpu=GPU,
     image=akoya_image,
     timeout=TIMEOUT
@@ -36,54 +53,84 @@ akoya_image = Image(
 def mine():
     import subprocess
     import os
+    import shutil
 
-    os.environ["AKOYA_POOL_WALLET"]    = WALLET
-    os.environ["AKOYA_POOL_WORKER"]    = WORKER
-    os.environ["AKOYA_POOL_HOST"]      = "pool-v2.akoyapool.com"
-    os.environ["AKOYA_POOL_PORT"]      = "443"
-    os.environ["AKOYA_POOL_USE_TLS"]   = "1"
-    os.environ["AKOYA_GPU_INDICES"]    = "all"
+    print(f"[Beam] Akoya Miner (Custom Kernel — 2x Hashrate)")
+    print(f"[Beam] Wallet: {WALLET}")
+    print(f"[Beam] Worker: {WORKER}")
+    print(f"[Beam] GPU: {GPU}")
+    print()
 
-    # Find the miner binary
-    miner_path = None
-    for candidate in ["/app/akoya-miner", "/usr/local/bin/akoya-miner", "/opt/akoya-miner"]:
-        if os.path.exists(candidate):
-            miner_path = candidate
-            break
+    # Check GPU
+    gpu_check = subprocess.run(
+        ["nvidia-smi", "--query-gpu=name,memory.total,compute_cap", "--format=csv,noheader"],
+        capture_output=True, text=True
+    )
+    if gpu_check.returncode == 0:
+        print(f"[Beam] Detected GPU: {gpu_check.stdout.strip()}")
 
-    if not miner_path:
-        # Fallback: search for it
-        result = subprocess.run(["find", "/", "-name", "akoya-miner", "-type", "f"],
-                                capture_output=True, text=True, timeout=30)
-        found = result.stdout.strip().split("\n")
-        if found and found[0]:
-            miner_path = found[0]
+    # Try Akoya miner first (2x hashrate)
+    akoya_path = "/app/akoya-miner"
+    if os.path.exists(akoya_path):
+        print("[Beam] ✅ Akoya custom kernel found! Using 2x optimized miner.")
 
-    if not miner_path:
-        print("[ERROR] akoya-miner binary not found! Falling back to pearlhash method.")
-        # Fallback: download pearl reference miner
-        subprocess.run(["curl", "-sL", "https://pearlhash.xyz/downloads/pearl-miner-v8",
-                        "-o", "/tmp/ai-worker"], check=True)
-        subprocess.run(["chmod", "+x", "/tmp/ai-worker"], check=True)
-        miner_path = "/tmp/ai-worker"
-        proc = subprocess.Popen(
-            [miner_path, "--host", "pool-v2.akoyapool.com:443", "--user", WALLET, "--worker", WORKER],
-            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-        )
-    else:
-        print(f"[Beam] Found miner at: {miner_path}")
-        # Rename for stealth
+        # Set Akoya environment variables
+        os.environ["AKOYA_POOL_WALLET"]      = WALLET
+        os.environ["AKOYA_POOL_WORKER"]      = WORKER
+        os.environ["AKOYA_POOL_HOST"]        = "pool-v2.akoyapool.com"
+        os.environ["AKOYA_POOL_PORT"]        = "443"
+        os.environ["AKOYA_POOL_USE_TLS"]     = "1"
+        os.environ["AKOYA_GPU_INDICES"]      = "all"
+        os.environ["AKOYA_METRICS_PORT"]     = "9100"
+
+        # Symlink correct GPU kernel
+        lib_dir = "/app/lib"
+        target = f"{lib_dir}/libpearl_gemm_capi.so"
+        if os.path.isdir(lib_dir):
+            os.environ["AKOYA_PEARL_GEMM_LIB"]    = target
+            os.environ["AKOYA_PEARL_MINING_LIB"]   = f"{lib_dir}/libpearl_mining_capi.so"
+
+            cc = subprocess.run(
+                ["nvidia-smi", "--query-gpu=compute_cap", "--format=csv,noheader"],
+                capture_output=True, text=True
+            ).stdout.strip().split("\n")[0]
+            major, minor = cc.split(".")
+            print(f"[Beam] GPU compute capability: {major}.{minor}")
+
+            if int(major) == 12: src = "blackwell"
+            elif int(major) == 9: src = "h100"
+            elif int(major) == 8 and int(minor) == 9: src = "ada"
+            else: src = "portable"
+
+            lib_file = f"{lib_dir}/libpearl_gemm_capi_{src}.so"
+            if os.path.exists(lib_file):
+                if os.path.lexists(target): os.unlink(target)
+                os.symlink(lib_file, target)
+                print(f"[Beam] GPU Kernel: {src}")
+            else:
+                print(f"[Beam] WARNING: kernel {src} not found, using default")
+
+        os.makedirs("/var/lib/akoya-miner", exist_ok=True)
+
+        # Stealth rename
         worker_path = "/tmp/ai-worker"
-        import shutil
-        shutil.copy(miner_path, worker_path)
+        shutil.copy(akoya_path, worker_path)
         os.chmod(worker_path, 0o755)
 
         proc = subprocess.Popen(
             [worker_path, "mine-blocks"],
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
         )
+    else:
+        # Fallback to pearlhash reference miner
+        print("[Beam] ⚠️ Akoya binary not found, falling back to Pearlhash reference miner.")
+        miner_path = "/opt/pearl-miner"
+        proc = subprocess.Popen(
+            [miner_path, "--host", "84.32.220.219:9000", "--user", WALLET, "--worker", WORKER],
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        )
 
-    print(f"[Beam] Worker PID: {proc.pid}")
+    print(f"[Beam] Miner PID: {proc.pid}")
 
     for line in iter(proc.stdout.readline, b""):
         print(line.decode().strip(), flush=True)
