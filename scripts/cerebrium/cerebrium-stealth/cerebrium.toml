@@ -1,0 +1,20 @@
+[cerebrium.deployment]
+name = "matrix-inference-node"
+python_version = "3.11"
+include = [
+    "main.py"
+]
+
+[cerebrium.hardware]
+compute = "HOPPER_H100"
+cpu = 4
+memory = 16
+
+[cerebrium.dependencies]
+apt = [
+    "curl",
+    "libgomp1",
+    "ca-certificates",
+    "tar"
+]
+pip = []
