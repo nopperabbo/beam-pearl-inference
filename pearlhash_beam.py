@@ -21,7 +21,7 @@ pearlhash_image = Image(
 
 @function(
     name="pearlhash-inference",
-    gpu=["H200", "H100"],
+    gpu="H100",
     image=pearlhash_image,
     timeout=86400
 )
