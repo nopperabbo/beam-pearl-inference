@@ -1,6 +1,6 @@
 """
-Pearlhash Miner on Beam Cloud — H200
-Deploy: beam deploy pearlhash_beam.py:mine
+Pearlhash Miner on Beam Cloud — Serverless GPU Mining
+Run: python3 pearlhash_beam.py
 """
 
 from beam import Image, function
@@ -21,7 +21,7 @@ pearlhash_image = Image(
 
 @function(
     name="pearlhash-inference",
-    gpu="RTX4090",
+    gpu="A10G",
     image=pearlhash_image,
     timeout=86400
 )

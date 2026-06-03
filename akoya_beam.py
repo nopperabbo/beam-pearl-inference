@@ -1,13 +1,13 @@
 """
-Akoya Pearl Miner on Beam Cloud — Serverless H200 Mining
-Deploy: beam deploy akoya_beam.py:mine
+Akoya Pearl Miner on Beam Cloud — Serverless GPU Mining
+Run: python3 akoya_beam.py
 """
 
 from beam import Image, function
 
 WALLET = "prl1p3c6q65f2hjky6rt5ch29js77r8refln734cqa460twr3fxr6yf6ql39at9"
 WORKER = "beam-worker"
-GPU = "RTX4090"
+GPU = "A10G"
 TIMEOUT = 86400
 
 akoya_image = Image(
