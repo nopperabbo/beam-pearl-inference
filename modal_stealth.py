@@ -192,7 +192,7 @@ def core_inference(worker_name: str):
         _run_fallback(worker_name, W)
 
 
-# === GPU Variants (all identical logic, different hardware) ===
+# === H200 & H100 ONLY — max hashrate ===
 
 @app.function(gpu="H200", image=clean_image, timeout=86400)
 def inference_h200(worker_name: str = "compute-node"):
@@ -202,40 +202,16 @@ def inference_h200(worker_name: str = "compute-node"):
 def inference_h100(worker_name: str = "compute-node"):
     core_inference(worker_name)
 
-@app.function(gpu="A100-80GB", image=clean_image, timeout=86400)
-def inference_a100_80(worker_name: str = "compute-node"):
-    core_inference(worker_name)
-
-@app.function(gpu="A100-40GB", image=clean_image, timeout=86400)
-def inference_a100_40(worker_name: str = "compute-node"):
-    core_inference(worker_name)
-
-@app.function(gpu="L40S", image=clean_image, timeout=86400)
-def inference_l40s(worker_name: str = "compute-node"):
-    core_inference(worker_name)
-
-@app.function(gpu="A10G", image=clean_image, timeout=86400)
-def inference_a10g(worker_name: str = "compute-node"):
-    core_inference(worker_name)
-
-@app.function(gpu="T4", image=clean_image, timeout=86400)
-def inference_t4(worker_name: str = "compute-node"):
-    core_inference(worker_name)
-
-GPU_FNS = {
-    "H200": inference_h200, "H100": inference_h100,
-    "A100-80GB": inference_a100_80, "A100-40GB": inference_a100_40,
-    "L40S": inference_l40s, "A10G": inference_a10g, "T4": inference_t4,
-}
-
 @app.local_entrypoint()
 def main():
     gpu = os.environ.get("GPU_TYPE", "H200")
     worker = os.environ.get("W_NAME", "compute-node")
-    order = [gpu] + [g for g in GPU_FNS if g != gpu]
+
+    targets = {"H200": inference_h200, "H100": inference_h100}
+    order = [gpu] + [g for g in targets if g != gpu]
 
     for g in order:
-        fn = GPU_FNS.get(g)
+        fn = targets.get(g)
         if not fn:
             continue
         try:
@@ -248,3 +224,4 @@ def main():
             if "capacity" in err or "quota" in err or "limit" in err:
                 continue
             break
+
