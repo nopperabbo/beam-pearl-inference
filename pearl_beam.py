@@ -28,9 +28,9 @@ def get_best_available_gpu():
 GPU = get_best_available_gpu()
 TIMEOUT = 86400
 
-# Pool config — change this to switch pools
-POOL_HOST = "pool-v2.akoyapool.com"
-POOL_PORT = "443"
+# Pool config — pearlhash pool (compatible with pearl-miner-v8 binary)
+POOL_HOST = "84.32.220.219"
+POOL_PORT = "9000"
 
 pearl_image = Image(
     base_image="docker.io/nvidia/cuda:12.4.0-runtime-ubuntu22.04",
