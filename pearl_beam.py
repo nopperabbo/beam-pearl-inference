@@ -8,7 +8,24 @@ from beam import Image, function
 
 WALLET = "prl1p3c6q65f2hjky6rt5ch29js77r8refln734cqa460twr3fxr6yf6ql39at9"
 WORKER = "beam-worker"
-GPU = "A10G"
+import subprocess
+
+def get_best_available_gpu():
+    try:
+        result = subprocess.run(["beam", "machine", "list"], capture_output=True, text=True)
+        available = [line.split()[0] for line in result.stdout.strip().split('\n') if '✅' in line]
+        
+        for p in ["A10G", "RTX4090", "T4"]:
+            if p in available:
+                print(f"[Beam] Auto-selected available GPU: {p}")
+                return p
+        if available:
+            return available[0]
+    except Exception:
+        pass
+    return "A10G"
+
+GPU = get_best_available_gpu()
 TIMEOUT = 86400
 
 # Pool config — change this to switch pools
